@@ -1,0 +1,128 @@
+.stats-section {
+  padding: 5rem 0;
+  background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%);
+  position: relative;
+  overflow: hidden;
+}
+
+.stats-section::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent 0%, #e2e8f0 50%, transparent 100%);
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 2rem;
+  position: relative;
+  z-index: 2;
+}
+
+@media (min-width: 768px) {
+  .stats-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 3rem;
+  }
+}
+
+.stat-item {
+  position: relative;
+  text-align: center;
+  padding: 2rem 1rem;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 
+    0 4px 24px rgba(10, 36, 99, 0.08),
+    0 1px 2px rgba(10, 36, 99, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.8);
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.stat-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 
+    0 12px 32px rgba(10, 36, 99, 0.12),
+    0 2px 4px rgba(10, 36, 99, 0.08);
+}
+
+.stat-content {
+  position: relative;
+  z-index: 3;
+}
+
+.stat-number {
+  font-size: 2.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #0A2463 0%, #FF6B35 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 0.5rem;
+  line-height: 1;
+}
+
+.stat-suffix {
+  background: linear-gradient(135deg, #0A2463 0%, #FF6B35 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-weight: 700;
+}
+
+.stat-label {
+  color: #64748b;
+  font-weight: 500;
+  font-size: 0.95rem;
+  margin: 0;
+}
+
+.stat-bg {
+  position: absolute;
+  top: -50%;
+  right: -50%;
+  width: 100%;
+  height: 200%;
+  background: conic-gradient(
+    from 0deg at 50% 50%,
+    transparent 0%,
+    rgba(10, 36, 99, 0.03) 10%,
+    transparent 20%,
+    transparent 80%,
+    rgba(255, 107, 53, 0.03) 90%,
+    transparent 100%
+  );
+  z-index: 1;
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .stats-section {
+    background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+  }
+
+  .stats-section::before {
+    background: linear-gradient(90deg, transparent 0%, #334155 50%, transparent 100%);
+  }
+
+  .stat-item {
+    background: #1e293b;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+/* Reduced motion support */
+@media (prefers-reduced-motion: reduce) {
+  .stat-item {
+    transition: none;
+  }
+  
+  .stat-item:hover {
+    transform: none;
+  }
+}
