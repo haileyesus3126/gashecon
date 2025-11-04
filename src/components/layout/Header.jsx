@@ -132,33 +132,7 @@ export default function Header() {
           <div className="nav-wrapper">
             {/* Logo */}
             <a href="#home" className="logo" aria-label="Gashecon Construction - Home">
-              <motion.span
-                className="logo-icon"
-                whileHover={{ 
-                  rotate: prefersReduced ? 0 : 5, 
-                  scale: prefersReduced ? 1 : 1.05 
-                }}
-                transition={{ type: "spring", stiffness: 400, damping: 18 }}
-              >
-                <svg 
-                  width="32" 
-                  height="32" 
-                  viewBox="0 0 32 32" 
-                  fill="currentColor" 
-                  aria-hidden="true"
-                  focusable="false"
-                >
-                  <rect x="4" y="8" width="24" height="4" />
-                  <rect x="8" y="16" width="16" height="4" />
-                  <rect x="12" y="24" width="8" height="4" />
-                  <path 
-                    d="M4 8L16 4L28 8" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    fill="none" 
-                  />
-                </svg>
-              </motion.span>
+             
               <span className="logo-text">Gashecon</span>
             </a>
 

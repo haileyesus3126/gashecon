@@ -1,7 +1,150 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import { motion, useInView, AnimatePresence } from 'framer-motion';
-import { processData } from '../../data/processData';
 import './Process.css';
+
+// Constants for better maintainability
+const FLOATING_ELEMENTS_COUNT = 8;
+const AUTO_ROTATE_INTERVAL = 4000;
+const COUNTER_DURATION = 2000;
+
+// Process data included directly to avoid import issues
+const processData = [
+  {
+    id: 1,
+    step: "01",
+    title: "Consultation & Planning",
+    description: "We begin with an in-depth consultation to understand your vision, requirements, and objectives. Our team conducts site analysis and develops a comprehensive project plan.",
+    icon: "📋",
+    color: "#0A2463", // Using your brand color
+    duration: "1-2 Weeks",
+    details: [
+      "Initial client consultation and needs assessment",
+      "Site evaluation and feasibility study",
+      "Budget planning and cost estimation",
+      "Project timeline development",
+      "Regulatory compliance review"
+    ]
+  },
+  {
+    id: 2,
+    step: "02",
+    title: "Design & Engineering",
+    description: "Our architects and engineers create detailed designs that balance aesthetics, functionality, and structural integrity while incorporating sustainable practices.",
+    icon: "📐",
+    color: "#FF6B35", // Using your brand color
+    duration: "2-4 Weeks",
+    details: [
+      "Architectural design development",
+      "Structural engineering calculations",
+      "3D modeling and visualization",
+      "Material selection and specification",
+      "Building code compliance review"
+    ]
+  },
+  {
+    id: 3,
+    step: "03",
+    title: "Pre-Construction",
+    description: "We prepare all necessary documentation, obtain permits, and assemble the project team. Detailed scheduling and resource planning ensure a smooth construction phase.",
+    icon: "🏗️",
+    color: "#4CAF50", // Using your brand color
+    duration: "2-3 Weeks",
+    details: [
+      "Permit acquisition and approvals",
+      "Contractor and subcontractor selection",
+      "Material procurement and logistics",
+      "Safety plan development",
+      "Stakeholder coordination meetings"
+    ]
+  },
+  {
+    id: 4,
+    step: "04",
+    title: "Construction Phase",
+    description: "Our skilled team executes the project with precision, maintaining the highest standards of quality and safety while adhering to the established timeline.",
+    icon: "🔨",
+    color: "#8B5CF6",
+    duration: "Project Dependent",
+    details: [
+      "Site preparation and foundation work",
+      "Structural construction and framing",
+      "Mechanical, electrical, and plumbing",
+      "Quality control and inspections",
+      "Progress reporting and client updates"
+    ]
+  },
+  {
+    id: 5,
+    step: "05",
+    title: "Finishing & Quality Control",
+    description: "We focus on interior finishes, exterior detailing, and comprehensive quality checks to ensure every aspect meets our exacting standards.",
+    icon: "✨",
+    color: "#F59E0B",
+    duration: "2-4 Weeks",
+    details: [
+      "Interior finishing and detailing",
+      "Exterior landscaping and hardscaping",
+      "Final inspections and quality assurance",
+      "Punch list completion",
+      "Client walkthrough and feedback"
+    ]
+  },
+  {
+    id: 6,
+    step: "06",
+    title: "Project Delivery",
+    description: "We conduct final inspections, hand over all documentation, and provide ongoing support to ensure your complete satisfaction with the finished project.",
+    icon: "🎯",
+    color: "#06D6A0",
+    duration: "1 Week",
+    details: [
+      "Final project inspection and certification",
+      "Documentation and warranty handover",
+      "Client training and orientation",
+      "Post-construction support setup",
+      "Project completion celebration"
+    ]
+  }
+];
+
+// Animated counter component
+const Counter = ({ target, suffix = "", duration = COUNTER_DURATION }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, threshold: 0.5 });
+
+  useEffect(() => {
+    if (isInView) {
+      let start = 0;
+      const increment = target / (duration / 16);
+      let animationFrame;
+      
+      const updateCount = () => {
+        start += increment;
+        if (start >= target) {
+          setCount(target);
+        } else {
+          setCount(Math.ceil(start));
+          animationFrame = requestAnimationFrame(updateCount);
+        }
+      };
+
+      animationFrame = requestAnimationFrame(updateCount);
+
+      return () => {
+        if (animationFrame) {
+          cancelAnimationFrame(animationFrame);
+        }
+      };
+    }
+  }, [isInView, target, duration]);
+
+  return (
+    <span ref={ref} className="stat-number" aria-live="polite">
+      {count}{suffix}
+    </span>
+  );
+};
 
 const Process = () => {
   const sectionRef = useRef(null);
@@ -9,17 +152,18 @@ const Process = () => {
   const [hoveredStep, setHoveredStep] = useState(null);
   const isInView = useInView(sectionRef, { once: true, threshold: 0.1 });
 
-  // Auto-rotate through steps
+  // Auto-rotate through steps with pause on hover
   useEffect(() => {
     if (!isInView) return;
     
     const interval = setInterval(() => {
       setActiveStep((prev) => (prev + 1) % processData.length);
-    }, 4000);
+    }, AUTO_ROTATE_INTERVAL);
 
     return () => clearInterval(interval);
   }, [isInView]);
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -108,50 +252,66 @@ const Process = () => {
     }
   };
 
-  // Animated counter component
-  const Counter = ({ target, suffix = "", duration = 2000 }) => {
-    const [count, setCount] = useState(0);
-    const ref = useRef(null);
-    const isInView = useInView(ref, { once: true, threshold: 0.5 });
+  // Handlers
+  const handleStepHover = useCallback((index) => {
+    setHoveredStep(index);
+  }, []);
 
-    useEffect(() => {
-      if (isInView) {
-        let start = 0;
-        const increment = target / (duration / 16);
-        
-        const timer = setInterval(() => {
-          start += increment;
-          if (start >= target) {
-            setCount(target);
-            clearInterval(timer);
-          } else {
-            setCount(Math.ceil(start));
-          }
-        }, 16);
+  const handleStepLeave = useCallback(() => {
+    setHoveredStep(null);
+  }, []);
 
-        return () => clearInterval(timer);
-      }
-    }, [isInView, target, duration]);
+  const handleStepClick = useCallback((index) => {
+    setActiveStep(index);
+  }, []);
 
-    return (
-      <span ref={ref} className="stat-number">
-        {count}{suffix}
-      </span>
-    );
-  };
+  const scrollToContact = useCallback(() => {
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, []);
+
+  // Memoized data
+  const memoizedProcessData = useMemo(() => processData, []);
+  const memoizedStats = useMemo(() => [
+    { target: 150, suffix: "+", label: "Projects Completed", delay: 0.1 },
+    { target: 98, suffix: "%", label: "Client Satisfaction", delay: 0.2 },
+    { target: 15, suffix: "+", label: "Years Experience", delay: 0.3 },
+    { target: 50, suffix: "+", label: "Awards Won", delay: 0.4 }
+  ], []);
+
+  // Memoized floating elements
+  const floatingElements = useMemo(() => 
+    [...Array(FLOATING_ELEMENTS_COUNT)].map((_, i) => ({
+      id: i,
+      left: `${15 + (i * 10)}%`,
+      background: `linear-gradient(135deg, var(--accent-color)${10 + i * 5}%, transparent)`,
+      duration: 6 + i * 1,
+      delay: i * 0.3
+    }))
+  , []);
 
   return (
-    <section id="process" className="process section-padding" ref={sectionRef}>
+    <section 
+      id="process" 
+      className="process section-padding" 
+      ref={sectionRef}
+      aria-labelledby="process-heading"
+    >
       {/* Background Elements */}
-      <div className="process-background">
+      <div className="process-background" aria-hidden="true">
         <div className="floating-elements">
-          {[...Array(8)].map((_, i) => (
+          {floatingElements.map((element) => (
             <motion.div
-              key={i}
+              key={element.id}
               className="floating-element"
               style={{
-                left: `${15 + (i * 10)}%`,
-                background: `linear-gradient(135deg, var(--accent-color)${10 + i * 5}%, transparent)`
+                left: element.left,
+                background: element.background
               }}
               animate={{
                 y: [0, -50, 0],
@@ -159,10 +319,10 @@ const Process = () => {
                 scale: [1, 1.1, 1]
               }}
               transition={{
-                duration: 6 + i * 1,
+                duration: element.duration,
                 repeat: Infinity,
                 ease: "easeInOut",
-                delay: i * 0.3
+                delay: element.delay
               }}
             />
           ))}
@@ -190,6 +350,7 @@ const Process = () => {
           </motion.div>
 
           <motion.h2
+            id="process-heading"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -226,18 +387,28 @@ const Process = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.1 }}
+          role="list"
+          aria-label="Construction process steps"
         >
-          {processData.map((step, index) => (
+          {memoizedProcessData.map((step, index) => (
             <motion.div
               key={step.id}
               className={`process-step ${activeStep === index ? 'active' : ''} ${hoveredStep === index ? 'hovered' : ''}`}
               variants={stepVariants}
-              onHoverStart={() => setHoveredStep(index)}
-              onHoverEnd={() => setHoveredStep(null)}
-              onClick={() => setActiveStep(index)}
+              onHoverStart={() => handleStepHover(index)}
+              onHoverEnd={handleStepLeave}
+              onClick={() => handleStepClick(index)}
               whileHover={{ 
                 y: -8,
                 scale: 1.02
+              }}
+              role="listitem"
+              aria-current={activeStep === index ? 'step' : undefined}
+              tabIndex={0}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleStepClick(index);
+                }
               }}
             >
               {/* Step Indicator */}
@@ -257,6 +428,7 @@ const Process = () => {
                       duration: 2, 
                       repeat: activeStep === index ? Infinity : 0 
                     }}
+                    aria-hidden="true"
                   />
                 </motion.div>
 
@@ -267,6 +439,7 @@ const Process = () => {
                   style={{
                     background: `linear-gradient(135deg, ${step.color}, ${step.color}CC)`
                   }}
+                  aria-hidden="true"
                 >
                   <span>{step.icon}</span>
                   
@@ -282,14 +455,16 @@ const Process = () => {
                       repeat: Infinity,
                       delay: index * 0.5
                     }}
+                    aria-hidden="true"
                   />
                 </motion.div>
 
                 {/* Animated Connector */}
-                {index < processData.length - 1 && (
+                {index < memoizedProcessData.length - 1 && (
                   <motion.div
                     className="step-connector"
                     variants={connectorVariants}
+                    aria-hidden="true"
                   >
                     <motion.div
                       className="connector-progress"
@@ -297,7 +472,7 @@ const Process = () => {
                         scaleY: activeStep > index ? 1 : 0 
                       }}
                       transition={{ duration: 0.6, ease: "easeOut" }}
-                      style={{ background: `linear-gradient(to bottom, ${step.color}, ${processData[index + 1].color})` }}
+                      style={{ background: `linear-gradient(to bottom, ${step.color}, ${memoizedProcessData[index + 1].color})` }}
                     />
                   </motion.div>
                 )}
@@ -335,9 +510,10 @@ const Process = () => {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.6, delay: 0.8 + index * 0.1 }}
                   viewport={{ once: true }}
+                  aria-label={`Key activities for ${step.title}`}
                 >
                   <h4>📋 Key Activities:</h4>
-                  <ul>
+                  <ul role="list">
                     {step.details.map((detail, idx) => (
                       <motion.li
                         key={idx}
@@ -352,12 +528,14 @@ const Process = () => {
                           x: 5,
                           color: step.color
                         }}
+                        role="listitem"
                       >
                         <motion.span 
                           className="detail-check"
                           style={{ background: step.color }}
                           whileHover={{ scale: 1.2 }}
                           transition={{ duration: 0.2 }}
+                          aria-hidden="true"
                         >
                           ✓
                         </motion.span>
@@ -374,6 +552,7 @@ const Process = () => {
                   whileInView={{ opacity: 1, scale: 1 }}
                   transition={{ duration: 0.5, delay: 1 + index * 0.1 }}
                   viewport={{ once: true }}
+                  aria-label={`Typical duration for ${step.title}: ${step.duration}`}
                 >
                   <span className="duration-label">⏱️ Typical Duration:</span>
                   <span className="duration-value">{step.duration}</span>
@@ -386,6 +565,7 @@ const Process = () => {
                 style={{
                   background: `linear-gradient(135deg, ${step.color}10, ${step.color}05)`
                 }}
+                aria-hidden="true"
               />
             </motion.div>
           ))}
@@ -398,6 +578,8 @@ const Process = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.3 }}
+          role="region"
+          aria-label="Company statistics and achievements"
         >
           <motion.div
             className="stats-background"
@@ -405,22 +587,20 @@ const Process = () => {
             whileInView={{ scale: 1, opacity: 1 }}
             transition={{ duration: 0.6, delay: 0.4 }}
             viewport={{ once: true }}
+            aria-hidden="true"
           />
 
-          {[
-            { target: 150, suffix: "+", label: "Projects Completed", delay: 0.1 },
-            { target: 98, suffix: "%", label: "Client Satisfaction", delay: 0.2 },
-            { target: 15, suffix: "+", label: "Years Experience", delay: 0.3 },
-            { target: 50, suffix: "+", label: "Awards Won", delay: 0.4 }
-          ].map((stat, index) => (
+          {memoizedStats.map((stat, index) => (
             <motion.div
-              key={index}
+              key={stat.label}
               className="stat-item"
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6, delay: 0.5 + stat.delay }}
               viewport={{ once: true }}
               whileHover={{ scale: 1.05, y: -5 }}
+              role="group"
+              aria-label={`${stat.target}${stat.suffix} ${stat.label}`}
             >
               <div className="stat-number">
                 <Counter 
@@ -438,6 +618,7 @@ const Process = () => {
                 whileInView={{ scaleX: 1 }}
                 transition={{ duration: 1, delay: 0.8 + stat.delay, ease: "easeOut" }}
                 viewport={{ once: true }}
+                aria-hidden="true"
               />
             </motion.div>
           ))}
@@ -473,15 +654,18 @@ const Process = () => {
                 className="btn btn-primary"
                 whileHover={{ 
                   scale: 1.05,
-                  boxShadow: "0 10px 30px rgba(59, 130, 246, 0.3)" 
+                  boxShadow: "0 10px 30px rgba(10, 36, 99, 0.3)" 
                 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={scrollToContact}
+                aria-label="Start your construction project with our proven process"
               >
                 Start Your Project
                 <motion.svg 
                   width="20" 
                   height="20" 
                   viewBox="0 0 20 20"
+                  aria-hidden="true"
                   initial={{ x: 0 }}
                   whileHover={{ x: 5 }}
                 >
@@ -492,17 +676,22 @@ const Process = () => {
                 </motion.svg>
               </motion.a>
 
-              <motion.a
-                href="#contact"
+              <motion.button
                 className="btn btn-secondary"
                 whileHover={{ 
                   scale: 1.05,
                   borderColor: "var(--accent-color)" 
                 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  // Simulate PDF download
+                  console.log('Downloading process PDF...');
+                  // In a real app, this would trigger a download
+                }}
+                aria-label="Download our construction process PDF guide"
               >
                 Download Process PDF
-              </motion.a>
+              </motion.button>
             </motion.div>
           </motion.div>
         </motion.div>

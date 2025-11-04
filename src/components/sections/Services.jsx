@@ -1,7 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useMemo, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Services.css';
 
+// Constants for better maintainability
+const FLOATING_SHAPES_COUNT = 6;
 
 // Data included directly in the component to avoid import issues
 const servicesData = [
@@ -10,8 +12,8 @@ const servicesData = [
     title: "Commercial Construction",
     description: "State-of-the-art commercial spaces designed for functionality, sustainability, and business success with innovative architectural solutions.",
     icon: "🏢",
-    color: "#3B82F6",
-    gradient: "linear-gradient(135deg, #3B82F6 0%, #1E40AF 100%)",
+    color: "#0A2463", // Using your brand color
+    gradient: "linear-gradient(135deg, #0A2463 0%, #1E40AF 100%)",
     features: [
       "Office Buildings & Corporate Campuses",
       "Retail & Shopping Centers",
@@ -30,8 +32,8 @@ const servicesData = [
     title: "Residential Development",
     description: "Luxury residential properties combining modern design with timeless craftsmanship for exceptional living experiences.",
     icon: "🏡",
-    color: "#10B981",
-    gradient: "linear-gradient(135deg, #10B981 0%, #047857 100%)",
+    color: "#FF6B35", // Using your brand color
+    gradient: "linear-gradient(135deg, #FF6B35 0%, #E55A2B 100%)",
     features: [
       "Custom Luxury Homes",
       "Multi-Family Apartments",
@@ -50,8 +52,8 @@ const servicesData = [
     title: "Industrial Facilities",
     description: "Robust industrial structures engineered for efficiency, safety, and scalability in manufacturing and logistics.",
     icon: "🏭",
-    color: "#F59E0B",
-    gradient: "linear-gradient(135deg, #F59E0B 0%, #D97706 100%)",
+    color: "#4CAF50", // Using your brand color
+    gradient: "linear-gradient(135deg, #4CAF50 0%, #388E3C 100%)",
     features: [
       "Manufacturing Plants",
       "Warehouses & Distribution",
@@ -131,6 +133,7 @@ const Services = () => {
   const [activeService, setActiveService] = useState(null);
   const [hoveredCard, setHoveredCard] = useState(null);
 
+  // Animation variants
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -206,18 +209,59 @@ const Services = () => {
     tap: { scale: 0.98 }
   };
 
+  // Memoized floating shapes
+  const floatingShapes = useMemo(() => 
+    [...Array(FLOATING_SHAPES_COUNT)].map((_, i) => ({
+      id: i,
+      left: `${20 + (i * 15)}%`,
+      background: `linear-gradient(135deg, var(--accent-color)${10 + i * 5}%, transparent)`,
+      duration: 8 + i * 2,
+      delay: i * 0.5
+    }))
+  , []);
+
+  // Handlers
+  const handleCardHover = useCallback((serviceId) => {
+    setHoveredCard(serviceId);
+  }, []);
+
+  const handleCardLeave = useCallback(() => {
+    setHoveredCard(null);
+  }, []);
+
+  const handleLearnMore = useCallback((service) => {
+    // You can implement modal or navigation logic here
+    console.log('Learn more about:', service.title);
+    // For now, just set as active
+    setActiveService(service.id === activeService ? null : service.id);
+  }, [activeService]);
+
+  const scrollToContact = useCallback(() => {
+    const contactSection = document.getElementById('contact');
+    if (contactSection) {
+      contactSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    }
+  }, []);
+
   return (
-    <section id="services" className="services section-padding">
+    <section 
+      id="services" 
+      className="services section-padding"
+      aria-labelledby="services-heading"
+    >
       {/* Background Elements */}
-      <div className="services-background">
+      <div className="services-background" aria-hidden="true">
         <div className="floating-shapes">
-          {[...Array(6)].map((_, i) => (
+          {floatingShapes.map((shape) => (
             <motion.div
-              key={i}
+              key={shape.id}
               className="floating-shape"
               style={{
-                left: `${20 + (i * 15)}%`,
-                background: `linear-gradient(135deg, var(--accent-color)${10 + i * 5}%, transparent)`
+                left: shape.left,
+                background: shape.background
               }}
               animate={{
                 y: [0, -30, 0],
@@ -225,10 +269,10 @@ const Services = () => {
                 scale: [1, 1.1, 1]
               }}
               transition={{
-                duration: 8 + i * 2,
+                duration: shape.duration,
                 repeat: Infinity,
                 ease: "easeInOut",
-                delay: i * 0.5
+                delay: shape.delay
               }}
             />
           ))}
@@ -256,6 +300,7 @@ const Services = () => {
           </motion.div>
 
           <motion.h2
+            id="services-heading"
             initial={{ opacity: 0, y: 30 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.3 }}
@@ -292,15 +337,27 @@ const Services = () => {
           initial="hidden"
           whileInView="visible"
           viewport={{ once: true, amount: 0.2 }}
+          role="list"
+          aria-label="Our construction services"
         >
           {servicesData.map((service, index) => (
             <motion.div
               key={service.id}
-              className="service-card"
+              className={`service-card ${activeService === service.id ? 'active' : ''} ${hoveredCard === service.id ? 'hovered' : ''}`}
               variants={cardVariants}
               whileHover="hover"
-              onHoverStart={() => setHoveredCard(service.id)}
-              onHoverEnd={() => setHoveredCard(null)}
+              onHoverStart={() => handleCardHover(service.id)}
+              onHoverEnd={handleCardLeave}
+              onClick={() => handleLearnMore(service)}
+              role="listitem"
+              tabIndex={0}
+              onKeyPress={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  handleLearnMore(service);
+                }
+              }}
+              aria-expanded={activeService === service.id}
+              aria-label={`Learn more about ${service.title}`}
             >
               {/* Card Background Effect */}
               <div 
@@ -319,6 +376,7 @@ const Services = () => {
                   background: service.gradient,
                   borderColor: service.color
                 }}
+                aria-hidden="true"
               >
                 <motion.span
                   initial={{ scale: 0.8 }}
@@ -356,6 +414,7 @@ const Services = () => {
                   whileInView={{ opacity: 1 }}
                   transition={{ duration: 0.6, delay: 0.6 + index * 0.1 }}
                   viewport={{ once: true }}
+                  aria-label={`Features of ${service.title}`}
                 >
                   {service.features.map((feature, featureIndex) => (
                     <motion.li
@@ -368,11 +427,13 @@ const Services = () => {
                       }}
                       viewport={{ once: true }}
                     >
-                      <span className="feature-check">✓</span>
+                      <span className="feature-check" aria-hidden="true">✓</span>
                       {feature}
                     </motion.li>
                   ))}
                 </motion.ul>
+
+                
 
                 {/* CTA Button */}
                 <motion.div
@@ -382,29 +443,7 @@ const Services = () => {
                   transition={{ duration: 0.6, delay: 0.8 + index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  <motion.button
-                    className="cta-button"
-                    variants={buttonVariants}
-                    initial="initial"
-                    whileHover="hover"
-                    whileTap="tap"
-                  >
-                    Learn More
-                    <motion.svg 
-                      width="16" 
-                      height="16" 
-                      viewBox="0 0 16 16" 
-                      fill="none"
-                      initial={{ x: 0 }}
-                      whileHover={{ x: 5 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <path 
-                        d="M8 0L6.59 1.41L12.17 7H0V9H12.17L6.59 14.59L8 16L16 8L8 0Z" 
-                        fill="currentColor"
-                      />
-                    </motion.svg>
-                  </motion.button>
+                 
                 </motion.div>
               </div>
             </motion.div>
@@ -425,9 +464,11 @@ const Services = () => {
             className="btn btn-primary"
             whileHover={{ 
               scale: 1.05,
-              boxShadow: "0 10px 30px rgba(59, 130, 246, 0.3)" 
+              boxShadow: "0 10px 30px rgba(10, 36, 99, 0.3)" 
             }}
             whileTap={{ scale: 0.95 }}
+            onClick={scrollToContact}
+            aria-label="Start your construction project today"
           >
             START YOUR PROJECT TODAY →
           </motion.a>

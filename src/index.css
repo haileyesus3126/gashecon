@@ -1,68 +1,90 @@
-:root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
-  line-height: 1.5;
-  font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
-  font-synthesis: none;
-  text-rendering: optimizeLegibility;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+/* EPIC CONSTRUCTION BACKGROUND — COPY & PASTE */
+.animated-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
-}
-a:hover {
-  color: #535bf2;
-}
-
-body {
-  margin: 0;
-  display: flex;
-  place-items: center;
-  min-width: 320px;
-  min-height: 100vh;
+/* Dark Luxury Gradient */
+.animated-bg::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: 
+    radial-gradient(circle at 15% 85%, #1e3a8a 0%, transparent 50%),
+    radial-gradient(circle at 85% 15%, #ea580c 0%, transparent 50%),
+    linear-gradient(135deg, #0f172a 0%, #1e293b 48%, #0f172a 100%);
+  animation: breathe 18s infinite ease-in-out;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+@keyframes breathe {
+  0%, 100% { opacity: 0.94; filter: brightness(1); }
+  50% { opacity: 1; filter: brightness(1.08); }
 }
 
-button {
+/* Floating Steel Beams */
+.beam {
+  position: absolute;
+  background: linear-gradient(90deg, #94a3b8, #e2e8f0 50%, #94a3b8);
+  height: 11px;
   border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.6);
+  animation: floatBeam linear infinite;
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+.beam:nth-child(1) { width: 260px; top: 14%; left: -280px; animation-duration: 22s; }
+.beam:nth-child(2) { width: 340px; top: 36%; left: -380px; animation-duration: 28s; animation-delay: -9s; }
+.beam:nth-child(3) { width: 210px; top: 62%; left: -230px; animation-duration: 24s; animation-delay: -15s; }
+.beam:nth-child(4) { width: 300px; top: 82%; left: -320px; animation-duration: 26s; animation-delay: -7s; }
+
+@keyframes floatBeam {
+  0% { transform: translateX(-120px) rotate(1.8deg); }
+  100% { transform: translateX(130vw) rotate(-1.8deg); }
+}
+
+/* Golden Dust */
+.dust {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+  background: #fbbf24;
+  border-radius: 50%;
+  box-shadow: 0 0 18px #fbbf24;
+  animation: dustFall 14s linear infinite;
+}
+
+.dust:nth-child(5)  { left: 8%;  animation-delay: 0s;    animation-duration: 12s; }
+.dust:nth-child(6)  { left: 24%; animation-delay: 1.5s; animation-duration: 16s; }
+.dust:nth-child(7)  { left: 42%; animation-delay: 0.8s; animation-duration: 14s; }
+.dust:nth-child(8)  { left: 58%; animation-delay: 2.8s; animation-duration: 18s; }
+.dust:nth-child(9)  { left: 72%; animation-delay: 0.4s; animation-duration: 13s; }
+.dust:nth-child(10) { left: 88%; animation-delay: 2.2s; animation-duration: 15s; }
+.dust:nth-child(11) { left: 15%; animation-delay: 3.1s; animation-duration: 17s; }
+.dust:nth-child(12) { left: 95%; animation-delay: 1.0s; animation-duration: 11s; }
+
+@keyframes dustFall {
+  0%   { transform: translateY(-150px) translateX(0); opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateY(110vh) translateX(120px); opacity: 0; }
+}
+
+/* Blueprint Grid */
+.grid {
+  position: absolute;
+  inset: 0;
+  background-image: 
+    linear-gradient(cyan 1px, transparent 1px),
+    linear-gradient(90deg, cyan 1px, transparent 1px);
+  background-size: 64px 64px;
+  opacity: 0.08;
+  mask-image: radial-gradient(circle at center, black 28%, transparent 78%);
+  animation: gridPulse 42s infinite alternate;
+}
+
+@keyframes gridPulse {
+  0%   { background-size: 64px 64px; }
+  100% { background-size: 72px 72px; }
 }

@@ -1,0 +1,27 @@
+/* Minimal safe background that NEVER blocks scroll */
+.animated-bg{
+  position:fixed;
+  inset:0;
+  z-index:-1;          /* <- always behind content */
+  pointer-events:none; /* <- never captures wheel/touch */
+  overflow:hidden;
+  contain:layout paint style;
+  backface-visibility:hidden;
+  transform:translateZ(0);
+}
+
+/* Just a soft gradient for now (we can add grid/beams later) */
+.animated-bg__gradient{
+  position:absolute;
+  inset:-10vh;
+  background:
+    radial-gradient(900px 500px at 85% 20%, rgba(231,76,60,.08), transparent 60%),
+    linear-gradient(180deg, #0b1522, #0e1b2a 40%, #0b1522 100%);
+  opacity:.95;
+}
+
+.animated-bg__layer{
+  position:absolute;
+  inset:-10vh;
+  will-change:transform,opacity;
+}

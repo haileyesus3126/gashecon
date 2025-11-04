@@ -1,436 +1,425 @@
-import React, { useEffect, useState } from 'react';
+// Hero.jsx
+import React, { useEffect, useMemo, useRef, useState, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import './Hero.css';
 
+// --- Config ---
+const SLIDE_INTERVAL = 6000;
+const PARTICLE_COUNT = 14;
+
+// Static copy (never changes between slides)
+const HERO_COPY = {
+  title: 'Building Excellence',
+  highlight: 'Since 2009',
+  subtitle:
+    'Premium construction services with uncompromising quality and precision craftsmanship',
+  primaryCtaText: 'Start Your Project',
+  secondaryCtaText: 'Explore Portfolio',
+  brandColor: '#0A2463', // used for accents (not tied to slide)
+};
+
 const Hero = () => {
-  const [currentSlide, setCurrentSlide] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
+  const [current, setCurrent] = useState(0);
+  const [imageLoaded, setImageLoaded] = useState({});
+  const [direction, setDirection] = useState(0);
+  const timerRef = useRef(null);
+  const hoveringRef = useRef(false);
 
-  const slides = [
-    {
-      id: 1,
-      type: 'image',
-      src: '/images/hero/construction-1.jpg',
-      alt: 'Modern construction project',
-      title: 'Building Excellence',
-      highlight: 'Since 2009',
-      subtitle: 'Premium construction services with uncompromising quality and precision craftsmanship',
-      cta: 'Start Your Project',
-      color: '#3B82F6'
-    },
-    {
-      id: 2,
-      type: 'image',
-      src: '/images/hero/construction-2.jpg',
-      alt: 'Architectural design',
-      title: 'Innovative Solutions',
-      highlight: 'Cutting-Edge',
-      subtitle: 'Transforming visions into enduring landmarks with advanced technology and expertise',
-      cta: 'View Our Work',
-      color: '#10B981'
-    },
-    {
-      id: 3,
-      type: 'image',
-      src: '/images/hero/construction-3.jpg',
-      alt: 'Project completion',
-      title: 'Your Vision',
-      highlight: 'Our Craftsmanship',
-      subtitle: 'Delivering exceptional results that stand the test of time and exceed expectations',
-      cta: 'Get Free Quote',
-      color: '#F59E0B'
-    }
-  ];
+  // Background slides (images only)
+  const slides = useMemo(
+    () => [
+      {
+        id: 1,
+        src: '/images/hero/construction-1.jpg',
+        fallback: '/images/hero/construction-1.webp',
+        color: '#0A2463',
+      },
+      {
+        id: 2,
+        src: '/images/hero/construction-2.jpg',
+        fallback: '/images/hero/construction-2.webp',
+        color: '#FF6B35',
+      },
+      {
+        id: 3,
+        src: '/images/hero/construction-3.jpg',
+        fallback: '/images/hero/construction-3.webp',
+        color: '#4CAF50',
+      },
+    ],
+    []
+  );
 
-  // Auto-rotate slides every 6s
+  // Preload images (with fallback)
   useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % slides.length);
-    }, 6000);
-    return () => clearInterval(timer);
-  }, [slides.length]);
+    slides.forEach((s) => {
+      const img = new Image();
+      img.onload = () => setImageLoaded((p) => ({ ...p, [s.id]: true }));
+      img.onerror = () => {
+        if (s.fallback) {
+          const fb = new Image();
+          fb.onload = () => setImageLoaded((p) => ({ ...p, [s.id]: true }));
+          fb.onerror = () => setImageLoaded((p) => ({ ...p, [s.id]: false }));
+          fb.src = s.fallback;
+        } else {
+          setImageLoaded((p) => ({ ...p, [s.id]: false }));
+        }
+      };
+      img.src = s.src;
+    });
+  }, [slides]);
 
-  // Simulate loading
-  useEffect(() => {
-    const timer = setTimeout(() => setIsLoading(false), 1000);
-    return () => clearTimeout(timer);
+  // Respect reduced motion
+  const prefersReducedMotion =
+    typeof window !== 'undefined' &&
+    window.matchMedia &&
+    window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Auto-rotate (pause on visibility change and hover)
+  const start = useCallback(() => {
+    if (prefersReducedMotion) return;
+    clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      if (!hoveringRef.current) {
+        setDirection(1);
+        setCurrent((i) => (i + 1) % slides.length);
+      }
+    }, SLIDE_INTERVAL);
+  }, [slides.length, prefersReducedMotion]);
+
+  const stop = useCallback(() => {
+    clearInterval(timerRef.current);
   }, []);
 
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.2,
-        delayChildren: 0.3
-      }
-    }
-  };
+  useEffect(() => {
+    start();
+    const onVis = () => (document.hidden ? stop() : start());
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [start, stop]);
 
-  const textVariants = {
-    hidden: { opacity: 0, y: 30 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.8,
-        ease: [0.25, 0.46, 0.45, 0.94]
-      }
-    }
-  };
+  // Particles (decorative)
+  const particles = useMemo(
+    () =>
+      Array.from({ length: PARTICLE_COUNT }).map((_, i) => ({
+        id: i,
+        left: `${Math.random() * 100}%`,
+        top: `${Math.random() * 100}%`,
+        duration: 3 + Math.random() * 2,
+        delay: Math.random() * 1.5,
+      })),
+    []
+  );
 
-  const staggerText = {
-    hidden: { opacity: 0, y: 20 },
-    visible: {
-      opacity: 1,
-      y: 0,
-      transition: {
-        duration: 0.6,
-        ease: "easeOut"
-      }
-    }
-  };
-
-  const buttonVariants = {
-    initial: { scale: 1, boxShadow: "0 4px 14px 0 rgba(0, 0, 0, 0.1)" },
-    hover: { 
-      scale: 1.05, 
-      boxShadow: "0 6px 20px 0 rgba(0, 0, 0, 0.2)",
-      transition: { duration: 0.3, ease: "easeInOut" }
+  // Navigation
+  const goTo = useCallback(
+    (idx) => {
+      setDirection(idx > current ? 1 : -1);
+      setCurrent(idx);
     },
-    tap: { scale: 0.98 }
+    [current]
+  );
+
+  const next = useCallback(() => {
+    setDirection(1);
+    setCurrent((i) => (i + 1) % slides.length);
+  }, [slides.length]);
+
+  const prev = useCallback(() => {
+    setDirection(-1);
+    setCurrent((i) => (i - 1 + slides.length) % slides.length);
+  }, [slides.length]);
+
+  // Animations
+  const slideVariants = {
+    enter: (dir) => ({
+      x: dir > 0 ? 600 : -600,
+      opacity: 0,
+      scale: 1.06,
+    }),
+    center: {
+      x: 0,
+      opacity: 1,
+      scale: 1,
+      transition: { duration: prefersReducedMotion ? 0 : 1, ease: [0.33, 1, 0.68, 1] },
+    },
+    exit: (dir) => ({
+      x: dir < 0 ? 600 : -600,
+      opacity: 0,
+      scale: 0.98,
+      transition: { duration: prefersReducedMotion ? 0 : 0.8, ease: [0.33, 1, 0.68, 1] },
+    }),
   };
 
-  const floatingVariants = {
+  const textContainer = {
+    hidden: { opacity: 0, y: 20, filter: 'blur(8px)' },
+    show: {
+      opacity: 1,
+      y: 0,
+      filter: 'blur(0px)',
+      transition: { duration: 0.8, delay: 0.2, when: 'beforeChildren', staggerChildren: 0.1 },
+    },
+  };
+
+  const textItem = {
+    hidden: { opacity: 0, y: 14 },
+    show: { opacity: 1, y: 0, transition: { duration: 0.6 } },
+  };
+
+  const floating = {
     animate: {
       y: [0, -10, 0],
-      transition: {
-        duration: 3,
-        repeat: Infinity,
-        ease: "easeInOut"
-      }
-    }
+      transition: { duration: 3, repeat: Infinity, ease: 'easeInOut' },
+    },
   };
 
-  const scrollToExplore = () => {
-    const nextSection = document.getElementById('services');
-    if (nextSection) {
-      nextSection.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
-
-  const goToSlide = (index) => {
-    setCurrentSlide(index);
-  };
+  const bg = slides[current];
+  const bgUrl = imageLoaded[bg?.id] ? bg.src : bg.fallback || bg.src;
 
   return (
-    <section id="home" className="hero">
-      {/* Background Slides with Enhanced Effects */}
+    <section
+      id="home"
+      className="hero"
+      aria-label="Hero section showcasing construction services"
+      onMouseEnter={() => {
+        hoveringRef.current = true;
+      }}
+      onMouseLeave={() => {
+        hoveringRef.current = false;
+      }}
+    >
+      {/* Background slider */}
       <div className="hero-background" aria-hidden="true">
-        <AnimatePresence mode="wait">
+        <AnimatePresence mode="wait" custom={direction}>
           <motion.div
-            key={slides[currentSlide].id}
+            key={bg?.id || 'bg'}
             className="hero-slide"
-            initial={{ opacity: 0, scale: 1.1 }}
-            animate={{ opacity: 1, scale: 1 }}
-            exit={{ opacity: 0, scale: 1 }}
-            transition={{ duration: 1.5, ease: [0.25, 0.46, 0.45, 0.94] }}
+            custom={direction}
+            variants={slideVariants}
+            initial="enter"
+            animate="center"
+            exit="exit"
             style={{
-              backgroundImage: `linear-gradient(135deg, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.2) 100%), url(${slides[currentSlide].src})`
+              backgroundImage: `linear-gradient(135deg, rgba(10,36,99,0.65) 0%, rgba(0,0,0,0.35) 100%), url(${bgUrl})`,
             }}
-          >
-            {/* Animated Gradient Overlay */}
-            <div 
-              className="slide-gradient"
-              style={{
-                background: `linear-gradient(135deg, ${slides[currentSlide].color}20, transparent 50%)`
-              }}
-            />
-          </motion.div>
+          />
         </AnimatePresence>
 
-        {/* Animated Background Elements */}
+        {/* Soft colored angle overlay from current slide color */}
+        <motion.div
+          className="slide-gradient"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1.2 }}
+          style={{ background: `linear-gradient(135deg, ${bg.color}30, transparent 70%)` }}
+        />
+
+        {/* Particles */}
         <div className="hero-particles">
-          {[...Array(15)].map((_, i) => (
-            <motion.div
-              key={i}
+          {particles.map((p) => (
+            <motion.span
+              key={p.id}
               className="particle"
-              style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
-                background: slides[currentSlide].color
-              }}
-              animate={{
-                y: [0, -100, 0],
-                opacity: [0, 0.3, 0],
-                scale: [0, 1, 0]
-              }}
-              transition={{
-                duration: 3 + Math.random() * 2,
-                repeat: Infinity,
-                delay: Math.random() * 2
-              }}
+              style={{ left: p.left, top: p.top, background: bg.color }}
+              animate={{ y: [0, -80, 0], opacity: [0, 0.3, 0], scale: [0, 1, 0] }}
+              transition={{ duration: p.duration, repeat: Infinity, delay: p.delay }}
             />
           ))}
         </div>
       </div>
 
-      {/* Main Content */}
+      {/* --- STATIC TEXT (does not depend on current slide) --- */}
       <div className="container">
         <motion.div
           className="hero-content"
-          variants={containerVariants}
+          variants={textContainer}
           initial="hidden"
-          animate="visible"
+          animate="show"
         >
-          {/* Text Content */}
-          <motion.div className="hero-text" variants={textVariants}>
-            {/* Badge */}
-            <motion.div
-              className="hero-badge"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.4 }}
+          <motion.h1 className="hero-title" variants={textItem}>
+            <span className="title-line">{HERO_COPY.title}</span>
+            <span className="title-highlight" style={{ color: HERO_COPY.brandColor }}>
+              {HERO_COPY.highlight}
+            </span>
+          </motion.h1>
+
+          <motion.p className="hero-subtitle" variants={textItem}>
+            {HERO_COPY.subtitle}
+          </motion.p>
+
+          <motion.div className="hero-cta" variants={textItem}>
+            <motion.a
+              href="#contact"
+              className="btn btn-primary"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              style={{
+                background: `linear-gradient(135deg, ${HERO_COPY.brandColor}, ${HERO_COPY.brandColor}CC)`,
+              }}
+              aria-label={`Get started: ${HERO_COPY.primaryCtaText}`}
             >
-              <span className="badge-dot"></span>
-              Premium Construction Services
-            </motion.div>
-
-            {/* Title with Highlight */}
-            <motion.h1 className="hero-title" variants={staggerText}>
-              <motion.span 
-                className="title-line"
-                variants={staggerText}
+              {HERO_COPY.primaryCtaText}
+              <motion.svg
+                width="16"
+                height="16"
+                viewBox="0 0 16 16"
+                fill="none"
+                initial={{ x: 0 }}
+                whileHover={{ x: 4 }}
+                transition={{ duration: 0.2 }}
+                aria-hidden="true"
               >
-                {slides[currentSlide].title}
-              </motion.span>
-              <motion.span 
-                className="title-highlight"
-                variants={staggerText}
-                style={{ color: slides[currentSlide].color }}
-              >
-                {slides[currentSlide].highlight}
-              </motion.span>
-            </motion.h1>
+                <path
+                  d="M8 0L6.59 1.41L12.17 7H0V9H12.17L6.59 14.59L8 16L16 8L8 0Z"
+                  fill="currentColor"
+                />
+              </motion.svg>
+            </motion.a>
 
-            {/* Subtitle */}
-            <motion.p 
-              className="hero-subtitle"
-              variants={staggerText}
+            <motion.a
+              href="#projects"
+              className="btn btn-secondary"
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.98 }}
+              aria-label="Explore our portfolio of completed projects"
             >
-              {slides[currentSlide].subtitle}
-            </motion.p>
-
-            {/* CTA Buttons */}
-            <motion.div 
-              className="hero-cta"
-              variants={staggerText}
-            >
-              <motion.a
-                href="#contact"
-                className="btn btn-primary"
-                variants={buttonVariants}
-                initial="initial"
-                whileHover="hover"
-                whileTap="tap"
-                style={{
-                  background: `linear-gradient(135deg, ${slides[currentSlide].color}, ${slides[currentSlide].color}CC)`
-                }}
-              >
-                {slides[currentSlide].cta}
-                <motion.svg 
-                  width="16" 
-                  height="16" 
-                  viewBox="0 0 16 16" 
-                  fill="none"
-                  initial={{ x: 0 }}
-                  whileHover={{ x: 4 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  <path 
-                    d="M8 0L6.59 1.41L12.17 7H0V9H12.17L6.59 14.59L8 16L16 8L8 0Z" 
-                    fill="currentColor"
-                  />
-                </motion.svg>
-              </motion.a>
-
-              <motion.a
-                href="#projects"
-                className="btn btn-secondary"
-                variants={buttonVariants}
-                initial="initial"
-                whileHover="hover"
-                whileTap="tap"
-              >
-                <span>Explore Portfolio</span>
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-                  <path 
-                    d="M14 8L8 14M14 8L8 2M14 8H2" 
-                    stroke="currentColor" 
-                    strokeWidth="2" 
-                    strokeLinecap="round" 
-                    strokeLinejoin="round"
-                  />
-                </svg>
-              </motion.a>
-            </motion.div>
+              <span>{HERO_COPY.secondaryCtaText}</span>
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <path
+                  d="M14 8L8 14M14 8L8 2M14 8H2"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                />
+              </svg>
+            </motion.a>
           </motion.div>
 
-          {/* Enhanced Stats */}
-          <motion.div 
-            className="hero-stats"
-            variants={staggerText}
-          >
+          {/* Stats */}
+          <div className="hero-stats" role="region" aria-label="Company achievements and statistics">
             {[
-              { number: "450+", label: "Projects Completed", delay: 0.1 },
-              { number: "15+", label: "Years Experience", delay: 0.2 },
-              { number: "98%", label: "Client Satisfaction", delay: 0.3 },
-              { number: "50+", label: "Expert Team", delay: 0.4 }
-            ].map((stat, index) => (
+              { number: '450+', label: 'Projects Completed' },
+              { number: '15+', label: 'Years Experience' },
+              { number: '98%', label: 'Client Satisfaction' },
+              { number: '50+', label: 'Expert Team' },
+            ].map((s, i) => (
               <motion.div
-                key={index}
+                key={s.label}
                 className="stat-item"
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.6, delay: 0.8 + stat.delay }}
-                whileHover={{ scale: 1.05, y: -2 }}
+                initial={{ opacity: 0, y: 12, scale: 0.96 }}
+                whileInView={{ opacity: 1, y: 0, scale: 1 }}
+                viewport={{ once: true, amount: 0.4 }}
+                transition={{ duration: 0.5, delay: 0.15 * i }}
+                role="group"
+                aria-label={`${s.number} ${s.label}`}
               >
-                <motion.span 
-                  className="stat-number"
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ 
-                    type: 'spring', 
-                    stiffness: 200, 
-                    damping: 15, 
-                    delay: 1 + stat.delay 
-                  }}
-                >
-                  {stat.number}
-                </motion.span>
-                <span className="stat-label">{stat.label}</span>
+                <span className="stat-number">{s.number}</span>
+                <span className="stat-label">{s.label}</span>
               </motion.div>
             ))}
-          </motion.div>
+          </div>
         </motion.div>
       </div>
 
-      {/* Slide Navigation */}
+      {/* Navigation */}
       <div className="slide-navigation">
         <div className="slide-indicators">
-          {slides.map((slide, index) => (
+          {slides.map((s, i) => (
             <button
-              key={slide.id}
-              className={`slide-indicator ${index === currentSlide ? 'active' : ''}`}
-              onClick={() => goToSlide(index)}
-              aria-label={`Go to slide ${index + 1}: ${slide.title}`}
+              key={s.id}
+              className={`slide-indicator ${i === current ? 'active' : ''}`}
+              onClick={() => goTo(i)}
+              aria-label={`Go to slide ${i + 1}`}
+              aria-current={i === current ? 'true' : 'false'}
             >
               <motion.span
                 className="indicator-progress"
-                animate={{ width: index === currentSlide ? '100%' : '0%' }}
-                transition={{ duration: 6, ease: 'linear' }}
-                style={{ background: slide.color }}
+                animate={{ width: i === current ? '100%' : '0%' }}
+                transition={{ duration: SLIDE_INTERVAL / 1000, ease: 'linear' }}
+                style={{ background: s.color }}
               />
-              <span className="indicator-number">0{index + 1}</span>
+              <span className="indicator-number">0{i + 1}</span>
             </button>
           ))}
         </div>
 
-        {/* Navigation Arrows */}
         <div className="slide-arrows">
-          <button 
+          <motion.button
             className="arrow-btn prev"
-            onClick={() => goToSlide((currentSlide - 1 + slides.length) % slides.length)}
+            onClick={prev}
             aria-label="Previous slide"
+            whileHover={{ scale: 1.08, x: -2 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M15 5L7.5 10L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M15 5L7.5 10L15 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
-          </button>
-          <button 
+          </motion.button>
+          <motion.button
             className="arrow-btn next"
-            onClick={() => goToSlide((currentSlide + 1) % slides.length)}
+            onClick={next}
             aria-label="Next slide"
+            whileHover={{ scale: 1.08, x: 2 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-              <path d="M5 5L12.5 10L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round"/>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none" aria-hidden="true">
+              <path d="M5 5L12.5 10L5 15" stroke="currentColor" strokeWidth="2" strokeLinecap="round" />
             </svg>
-          </button>
+          </motion.button>
         </div>
       </div>
 
-      {/* Enhanced Scroll Indicator */}
-      <motion.div
+      {/* Scroll indicator */}
+      <motion.button
+        type="button"
         className="scroll-indicator"
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
-        transition={{ delay: 1.5 }}
-        onClick={scrollToExplore}
+        transition={{ delay: 0.8 }}
+        onClick={() => {
+          const el = document.getElementById('services');
+          if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }}
+        aria-label="Scroll down to explore more content"
       >
-        <motion.div
-          className="scroll-arrow"
-          variants={floatingVariants}
-          animate="animate"
-        >
+        <motion.span className="scroll-arrow" variants={floating} animate="animate" aria-hidden="true">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
-            <path 
-              d="M12 5V19M12 19L19 12M12 19L5 12" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
+            <path
+              d="M12 5V19M12 19L19 12M12 19L5 12"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
               strokeLinejoin="round"
             />
           </svg>
-        </motion.div>
+        </motion.span>
         <span className="scroll-text">Scroll to Explore</span>
-      </motion.div>
+      </motion.button>
 
       {/* Floating CTA */}
-      <motion.div
+      <motion.a
+        href="#contact"
         className="floating-cta"
-        initial={{ opacity: 0, x: 50 }}
+        initial={{ opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
-        transition={{ delay: 1.8, type: "spring", stiffness: 100 }}
+        transition={{ delay: 1 }}
+        style={{
+          background: `linear-gradient(135deg, ${HERO_COPY.brandColor}, ${HERO_COPY.brandColor}CC)`,
+        }}
+        aria-label="Get a free quote for your construction project"
       >
-        <motion.a
-          href="#contact"
-          className="floating-btn"
-          variants={buttonVariants}
-          initial="initial"
-          whileHover="hover"
-          whileTap="tap"
-          style={{
-            background: `linear-gradient(135deg, ${slides[currentSlide].color}, ${slides[currentSlide].color}CC)`
-          }}
-        >
-          <span>GET FREE QUOTE</span>
-          <motion.div
-            className="pulse-ring"
-            animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
-            transition={{ duration: 2, repeat: Infinity }}
-          />
-        </motion.a>
-      </motion.div>
-
-      {/* Loading Overlay */}
-      <AnimatePresence>
-        {isLoading && (
-          <motion.div
-            className="loading-overlay"
-            initial={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.5 }}
-          >
-            <motion.div
-              className="loading-spinner"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-            >
-              <div className="spinner-ring" style={{ borderColor: slides[currentSlide].color }} />
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+        <span>GET FREE QUOTE</span>
+        <motion.span
+          className="pulse-ring"
+          aria-hidden="true"
+          animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
+          transition={{ duration: 2, repeat: Infinity }}
+        />
+      </motion.a>
     </section>
   );
 };

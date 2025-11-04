@@ -1,35 +1,34 @@
-import { useInView } from 'react-intersection-observer';
-import { useAnimation } from 'framer-motion';
-import { useEffect } from 'react';
+import { useEffect, useRef, useState } from "react";
 
-export const useScrollAnimation = (threshold = 0.2) => {
-  const controls = useAnimation();
-  const [ref, inView] = useInView({
-    threshold: threshold,
-    triggerOnce: true
-  });
-
-  useEffect(() => {
-    if (inView) {
-      controls.start('animate');
-    }
-  }, [controls, inView]);
-
-  return [ref, controls];
-};
-
-export const useStaggerAnimation = (threshold = 0.1) => {
-  const controls = useAnimation();
-  const [ref, inView] = useInView({
-    threshold: threshold,
-    triggerOnce: true
-  });
+export default function useScrollAnimation({
+  root = null,
+  rootMargin = "0px",
+  threshold = 0.15,
+  triggerOnce = true,
+} = {}) {
+  const ref = useRef(null);
+  const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
-    if (inView) {
-      controls.start('animate');
-    }
-  }, [controls, inView]);
+    const node = ref.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
 
-  return [ref, controls];
-};
+    const obs = new IntersectionObserver(
+      (entries) => {
+        const [entry] = entries;
+        if (entry.isIntersecting) {
+          setIsVisible(true);
+          if (triggerOnce) obs.unobserve(node);
+        } else if (!triggerOnce) {
+          setIsVisible(false);
+        }
+      },
+      { root, rootMargin, threshold }
+    );
+
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, [root, rootMargin, threshold, triggerOnce]);
+
+  return { ref, isVisible };
+}
